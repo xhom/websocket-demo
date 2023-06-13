@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h2>WebSocket 测试页面</h2>
+    <input type="text" id="msg"/>
+    <button id="send1">sendToServer</button>
+    <button id="send2">sendToTopic</button>
+    <button id="send3">sendToUser</button>
+    <button id="close">Close</button>
+
+    <h5>接收到的消息：</h5>
+    <div style="width:800px; min-height: 400px" id="content"></div>
+
+    <script src="js/sockjs.min.js"></script>
+    <script src="js/stomp.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/wsClient.js"></script>
+
+    <script type="text/javascript">
+        (function($){
+            let $send1 = $("#send1"), $send2 = $("#send2"), $send3 = $("#send3"), $close = $("#close");
+            let $msg = $("#msg"),  $content = $("#content");
+
+            const client = WsClient.init('http://localhost:8080/ws?token=111', {
+                debug: true,
+                subscribes: [ //订阅列表，用于接收来自服务端的信息
+                    {
+                        headers:{},
+                        dest: "/app/topic/all",
+                        handler(frame){//订阅成功后，接收消息的回调
+                            $content.prepend("<div>"+frame.body+"</div><hr/>");
+                        }
+                    }
+                ]
+            }).connect({ //建立连接，可指定头信息
+                login: "zhangSan",
+                passcode: "123456",
+                Authentication: "Token"
+            }).subscribe({ //可以在init中订阅，也可以调用此方法订阅
+                dest: "/app/user/queue",
+                handler(frame){//订阅成功后，接收消息的回调
+                    $content.prepend("<div>"+frame.body+"</div><hr/>");
+                }
+            });
+
+            console.log("client: ", client);
+
+            $send1.on("click", function(){
+                client.send("/app/sendToServer", $msg.val())
+            });
+            $send2.on("click", function(){
+                client.send("/app/topic/sendToTopic", $msg.val())
+            });
+            $send3.on("click", function(){
+                client.send("/app/sendToUser", $msg.val())
+            });
+            $close.on("click", function(){
+                client.disconnect();
+            });
+        })(jQuery);
+    </script>
+
+</body>
+</html>
